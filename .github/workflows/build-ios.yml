@@ -1,0 +1,78 @@
+name: Build Lumio iOS (IPA non signée)
+
+# À chaque push sur main, ou à la main depuis l'onglet Actions.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: build-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  ios:
+    runs-on: macos-26
+    timeout-minutes: 150
+    env:
+      GRADLE_OPTS: -Dfile.encoding=UTF-8
+      IOS_CONFIGURATION: Release
+      KOTLIN_DAEMON_JVMARGS: -Xmx2g
+      NUVIO_GRADLE_JVMARGS: -Xmx3g -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=768M
+      NUVIO_KOTLIN_NATIVE_JVMARGS: -Xmx3g
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Cache Kotlin Native
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-${{ runner.arch }}-
+      - name: Xcode le plus récent
+        run: |
+          latest=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          echo "Xcode : $latest"
+          sudo xcode-select -s "$latest/Contents/Developer"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+      - name: Dépendances iOS (MPVKit, moteur Nuvio)
+        run: ./scripts/prepare-ios-dependencies.sh
+      - name: Numéro de version (1.0.<n° de build>)
+        run: |
+          sed -i '' -E 's/^([[:space:]]*MARKETING_VERSION[[:space:]]*=).*/\11.0.${{ github.run_number }}/; s/^([[:space:]]*CURRENT_PROJECT_VERSION[[:space:]]*=).*/\1${{ github.run_number }}/' iosApp/Configuration/Version.xcconfig
+          cat iosApp/Configuration/Version.xcconfig
+      - name: Compile l'IPA
+        run: |
+          ./scripts/build-ios-ipa.sh > build.log 2>&1 || {
+            grep -E "error:|e: |FAILURE|What went wrong|BUILD FAILED" build.log | awk '!seen[$0]++' | head -40 | while IFS= read -r l; do echo "::error::$l"; done
+            tail -n 120 build.log
+            exit 1
+          }
+          tail -n 20 build.log
+          ls -la build/ios-ipa
+      - name: Renomme l'IPA
+        run: cp "$(find build/ios-ipa -name '*.ipa' | head -1)" lumio-ios-unsigned.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lumio-ios
+          path: lumio-ios-unsigned.ipa
+      # Publiée seulement une fois l'appli passée en « Lumio » (avant : simple essai de compilation)
+      - name: Release
+        if: github.ref == 'refs/heads/main' && hashFiles('iosApp/Configuration/Lumio.xcconfig') != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Lumio iOS 1.0.${{ github.run_number }}
+          make_latest: true
+          body: "Lumio iOS (fork GPL-3 de Nuvio iOS). IPA non signée, à installer avec FlareStore, SideStore ou Sideloadly."
+          files: lumio-ios-unsigned.ipa
