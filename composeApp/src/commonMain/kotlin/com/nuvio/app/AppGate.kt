@@ -320,7 +320,10 @@ internal fun AppGate(
                 }
             }
             is AuthState.Unauthenticated -> {
-                if (allowCachedProfileAccess) {
+                if (com.nuvio.app.lumio.LumioMode.ENABLED) {
+                    // Lumio : pas de compte Nuvio, on entre directement (profil local)
+                    AuthRepository.signInAnonymously()
+                } else if (allowCachedProfileAccess) {
                     enterProfileGate(cachedProfiles, syncOnEnter = false)
                 } else {
                     ProfileRepository.clearInMemory()

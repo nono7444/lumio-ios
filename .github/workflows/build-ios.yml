@@ -66,6 +66,27 @@ jobs:
         with:
           name: lumio-ios
           path: lumio-ios-unsigned.ipa
+      - name: Source FlareStore / SideStore (altstore.json)
+        if: hashFiles('iosApp/Configuration/Lumio.xcconfig') != ''
+        run: |
+          python3 - <<'PY'
+          import json, os, datetime
+          n = os.environ['GITHUB_RUN_NUMBER']; repo = os.environ['GITHUB_REPOSITORY']
+          v = f'1.0.{n}'; size = os.path.getsize('lumio-ios-unsigned.ipa')
+          url = f'https://github.com/{repo}/releases/download/build-{n}/lumio-ios-unsigned.ipa'
+          icon = f'https://raw.githubusercontent.com/{repo}/main/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png'
+          date = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+          app = {'name': 'Lumio iOS', 'bundleIdentifier': 'lol.wawanono.lumio.ios', 'developerName': 'Norman',
+                 'subtitle': 'Lumio, version Nuvio', 'localizedDescription': 'Fork GPL-3 de Nuvio iOS, réduit à l’essentiel pour la famille.',
+                 'iconURL': icon, 'tintColor': '#3D8BFF', 'category': 'entertainment', 'version': v, 'versionDate': date,
+                 'downloadURL': url, 'size': size,
+                 'versions': [{'version': v, 'buildVersion': n, 'date': date, 'size': size, 'downloadURL': url, 'minOSVersion': '16.1'}],
+                 'appPermissions': {'entitlements': [], 'privacy': {}}}
+          src = {'name': 'Lumio iOS', 'identifier': 'lol.wawanono.lumio.ios.source',
+                 'sourceURL': f'https://github.com/{repo}/releases/latest/download/altstore.json',
+                 'iconURL': icon, 'tintColor': '#3D8BFF', 'apps': [app], 'news': []}
+          json.dump(src, open('altstore.json', 'w'), ensure_ascii=False, indent=2)
+          PY
       # Publiée seulement une fois l'appli passée en « Lumio » (avant : simple essai de compilation)
       - name: Release
         if: github.ref == 'refs/heads/main' && hashFiles('iosApp/Configuration/Lumio.xcconfig') != ''
@@ -75,4 +96,6 @@ jobs:
           name: Lumio iOS 1.0.${{ github.run_number }}
           make_latest: true
           body: "Lumio iOS (fork GPL-3 de Nuvio iOS). IPA non signée, à installer avec FlareStore, SideStore ou Sideloadly."
-          files: lumio-ios-unsigned.ipa
+          files: |
+            lumio-ios-unsigned.ipa
+            altstore.json

@@ -16,12 +16,21 @@ internal fun LazyListScope.settingsRootContent(
     onWatchPartyClick: (() -> Unit)? = null,
     category: SettingsCategory? = null,
 ) {
-    SettingsCategory.entries.filter { category == null || it == category }.forEach { group ->
+    val lumio = com.nuvio.app.lumio.LumioMode.ENABLED
+    SettingsCategory.entries.filter { (category == null || it == category) && !(lumio && it == SettingsCategory.Services) }.forEach { group ->
         item(key = group.name) {
             SettingsGroup(isTablet = isTablet) {
                 when (group) {
                     SettingsCategory.You -> {
-                        SettingsPageRow(
+                        if (lumio) {
+                            // Lumio : pas de compte Nuvio ; ton serveur Jellyfin à la place
+                            SettingsPageRow(
+                                page = SettingsPage.MediaServers,
+                                description = Res.string.compose_settings_root_integrations_description,
+                                isTablet = isTablet,
+                                onPageClick = onPageClick,
+                            )
+                        } else SettingsPageRow(
                             page = SettingsPage.Account,
                             description = Res.string.compose_settings_root_account_description,
                             isTablet = isTablet,
@@ -37,7 +46,7 @@ internal fun LazyListScope.settingsRootContent(
                                 onClick = onSwitchProfileClick,
                             )
                         }
-                        if (onWatchPartyClick != null) {
+                        if (onWatchPartyClick != null && !lumio) {
                             SettingsGroupDivider(isTablet = isTablet)
                             SettingsNavigationRow(
                                 title = stringResource(Res.string.party_title),
@@ -78,7 +87,7 @@ internal fun LazyListScope.settingsRootContent(
                             onPageClick = onPageClick,
                         )
                     }
-                    SettingsCategory.Services -> {
+                    SettingsCategory.Services -> if (!lumio) {
                         SettingsPageRow(
                             page = SettingsPage.Integrations,
                             description = Res.string.compose_settings_root_integrations_description,
@@ -101,13 +110,15 @@ internal fun LazyListScope.settingsRootContent(
                             onPageClick = onPageClick,
                         )
                         SettingsGroupDivider(isTablet = isTablet)
-                        SettingsPageRow(
-                            page = SettingsPage.Advanced,
-                            description = Res.string.compose_settings_root_advanced_description,
-                            isTablet = isTablet,
-                            onPageClick = onPageClick,
-                        )
-                        SettingsGroupDivider(isTablet = isTablet)
+                        if (!lumio) {
+                            SettingsPageRow(
+                                page = SettingsPage.Advanced,
+                                description = Res.string.compose_settings_root_advanced_description,
+                                isTablet = isTablet,
+                                onPageClick = onPageClick,
+                            )
+                            SettingsGroupDivider(isTablet = isTablet)
+                        }
                         SettingsPageRow(
                             page = SettingsPage.About,
                             description = Res.string.compose_settings_root_about_description,
