@@ -43,6 +43,8 @@ jobs:
           sudo xcode-select -s "$latest/Contents/Developer"
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
+      - name: local.properties (aucune clé : Lumio n'utilise ni compte Nuvio, ni Trakt, ni Sentry)
+        run: printf 'NUVIO_IOS_DISTRIBUTION=full\n' > local.properties
       - name: Dépendances iOS (MPVKit, moteur Nuvio)
         run: ./scripts/prepare-ios-dependencies.sh
       - name: Numéro de version (1.0.<n° de build>)
