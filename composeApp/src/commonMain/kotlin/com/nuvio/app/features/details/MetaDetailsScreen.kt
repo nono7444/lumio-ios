@@ -1197,6 +1197,7 @@ fun MetaDetailsScreen(
                                                             onSaveClick = toggleSaved,
                                                             onSaveLongClick = openLibraryListPicker,
                                                         )
+                                                        com.nuvio.app.lumio.LumioRequestBar(meta = meta)
                                                     }
                                                 } else {
                                                     null
@@ -2359,20 +2360,24 @@ private fun ConfiguredMetaSections(
     fun RenderSection(key: MetaScreenSectionKey, showHeader: Boolean = true) {
         when (key) {
             MetaScreenSectionKey.ACTIONS -> {
-                DetailActions(
-                    playLabel = playButtonLabel,
-                    playEnabled = isPrimaryPlayEnabled,
-                    isSaved = isSaved,
-                    isWatched = isWatched,
-                    isTablet = isTablet,
-                    shuffleEnabled = shuffleEnabled,
-                    onPlayClick = onPrimaryPlayClick,
-                    onPlayLongClick = if (showManualPlayOption) onPrimaryPlayLongClick else null,
-                    onShuffleClick = onShuffleClick,
-                    onWatchedClick = onWatchedClick,
-                    onSaveClick = onSaveClick,
-                    onSaveLongClick = onSaveLongClick,
-                )
+                androidx.compose.foundation.layout.Column {
+                    DetailActions(
+                        playLabel = playButtonLabel,
+                        playEnabled = isPrimaryPlayEnabled,
+                        isSaved = isSaved,
+                        isWatched = isWatched,
+                        isTablet = isTablet,
+                        shuffleEnabled = shuffleEnabled,
+                        onPlayClick = onPrimaryPlayClick,
+                        onPlayLongClick = if (showManualPlayOption) onPrimaryPlayLongClick else null,
+                        onShuffleClick = onShuffleClick,
+                        onWatchedClick = onWatchedClick,
+                        onSaveClick = onSaveClick,
+                        onSaveLongClick = onSaveLongClick,
+                    )
+                    // Lumio : « Demander » quand le titre n'est pas sur le serveur
+                    com.nuvio.app.lumio.LumioRequestBar(meta = meta)
+                }
             }
             MetaScreenSectionKey.OVERVIEW -> {
                 DetailMetaInfo(
