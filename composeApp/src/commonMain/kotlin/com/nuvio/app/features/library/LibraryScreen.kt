@@ -1,5 +1,7 @@
 package com.nuvio.app.features.library
 
+import com.nuvio.app.lumio.lumioReleasesContent
+import com.nuvio.app.lumio.lumioRequestsContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -472,13 +474,13 @@ fun LibraryScreen(
                     onConnectCloudClick = onConnectCloudClick,
                 )
             } else if (sourceMode == LibraryViewMode.Releases) {
-                com.nuvio.app.lumio.lumioReleasesContent(
+                lumioReleasesContent(
                     state = lumioReleases,
                     onPosterClick = onPreviewClick,
                     onRetry = { lumioReleasesRequest++ },
                 )
             } else if (sourceMode == LibraryViewMode.Requests) {
-                com.nuvio.app.lumio.lumioRequestsContent(
+                lumioRequestsContent(
                     state = lumioRequests,
                     filter = runCatching { com.nuvio.app.lumio.LumioRequestFilter.valueOf(lumioRequestFilterName) }
                         .getOrDefault(com.nuvio.app.lumio.LumioRequestFilter.ONGOING),
