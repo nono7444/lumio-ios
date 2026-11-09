@@ -75,6 +75,17 @@ fun LumioRequestBar(meta: MetaDetails, modifier: Modifier = Modifier) {
         }
     }
 
+    // Dès que le titre arrive dans Jellyfin : on vide le cache des recherches serveur pour que « Lire » le trouve tout de suite
+    val ready = media?.status == LumioStatus.AVAILABLE || media?.status == LumioStatus.PARTIALLY_AVAILABLE
+    var waited by remember(meta.id) { mutableStateOf(false) }
+    LaunchedEffect(ready, active?.id) {
+        if (active != null && !ready) waited = true
+        if (ready && waited) {
+            com.nuvio.app.features.servers.ServerMatcher.shared.clear()
+            waited = false
+        }
+    }
+
     val m = media ?: return
     if (m.status == LumioStatus.AVAILABLE) return
     val partial = m.status == LumioStatus.PARTIALLY_AVAILABLE

@@ -91,7 +91,8 @@ object SearchRepository {
         val addonManifestErrorMessage = enabledAddons.firstEnabledManifestError()
         val activeAddons = enabledAddons.filter { it.manifest != null }
         val serverSearches = ServerCatalog.searchTargets()
-        if (activeAddons.isEmpty() && serverSearches.isEmpty()) {
+        val lumioSearch = com.nuvio.app.lumio.LumioMode.ENABLED
+        if (activeAddons.isEmpty() && serverSearches.isEmpty() && !lumioSearch) {
             activeJob?.cancel()
             lastRequestKey = null
             _uiState.value = SearchUiState(
@@ -110,7 +111,7 @@ object SearchRepository {
             addons = activeAddons,
             query = normalizedQuery,
         )
-        if (requests.isEmpty() && serverSearches.isEmpty()) {
+        if (requests.isEmpty() && serverSearches.isEmpty() && !lumioSearch) {
             activeJob?.cancel()
             lastRequestKey = null
             _uiState.value = SearchUiState(
@@ -132,11 +133,15 @@ object SearchRepository {
                     "${request.addon.manifestUrl}:${request.type}:${request.catalogId}"
                 },
             )
+            if (lumioSearch) append("|lumio-tmdb")
             serverSearches.forEach { ref ->
                 append("|server:${ref.connection.id}:${ref.kind.contentType}:")
                 append(ref.connection.selectedLibraries(ref.kind).joinToString(",") { it.id })
             }
         }
+        // Lumio : d'abord ce qui est sur le serveur, puis tout TMDB (films et séries) pour pouvoir demander
+        val lumioLoaders: List<suspend () -> HomeCatalogSection> =
+            if (lumioSearch) listOf(suspend { com.nuvio.app.lumio.LumioTmdb.searchSection(normalizedQuery) }) else emptyList()
         val loaders: List<suspend () -> HomeCatalogSection> =
             requests.map { request -> suspend { request.toSection(forceRefresh = forceRefresh) } } +
                 serverSearches.map { ref ->
@@ -147,7 +152,7 @@ object SearchRepository {
                             }
                         }
                     }
-                }
+                } + lumioLoaders
         if (canReuseRequestState(forceRefresh, requestKey, lastRequestKey)) return
         lastRequestKey = requestKey
 

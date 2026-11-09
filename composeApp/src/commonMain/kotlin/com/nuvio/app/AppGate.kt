@@ -113,6 +113,12 @@ internal fun AppGate(
         AvatarRepository.fetchAvatars()
     }
 
+    LaunchedEffect(Unit) {
+        if (!ownsAppRuntime || !com.nuvio.app.lumio.LumioMode.ENABLED) return@LaunchedEffect
+        // Lumio : clé TMDB partagée par le serveur (recherche, fiches des titres absents)
+        com.nuvio.app.lumio.LumioTmdb.keepKeyFresh()
+    }
+
     val authState by AuthRepository.state.collectAsStateWithLifecycle()
     val profileState by ProfileRepository.state.collectAsStateWithLifecycle()
     val profileAvatars by AvatarRepository.avatars.collectAsStateWithLifecycle()

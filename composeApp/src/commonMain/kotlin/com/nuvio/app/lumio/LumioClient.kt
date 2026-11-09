@@ -16,6 +16,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -112,6 +113,10 @@ object LumioClient {
         }
         return obj ?: JsonObject(emptyMap())
     }
+
+    /** Clé TMDB partagée par le serveur Lumio (jamais écrite dans l'appli). */
+    suspend fun tmdbKey(): String? =
+        call(HttpMethod.Get, "/api/config/tmdb")["key"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
 
     /** Statut d'un titre sur le serveur (disponible, demandé, en cours…). */
     suspend fun media(type: String, tmdbId: Int?, imdbId: String?): LumioMedia {

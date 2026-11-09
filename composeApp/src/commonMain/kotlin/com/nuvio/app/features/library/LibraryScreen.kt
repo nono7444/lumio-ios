@@ -149,7 +149,10 @@ fun LibraryScreen(
         ServerRepository.uiState
     }.collectAsStateWithLifecycle()
     val hasServers = serversUiState.connections.any { it.enabled }
-    var sourceModeName by rememberSaveable { mutableStateOf(LibraryViewMode.Saved.name) }
+    // Lumio : on arrive directement sur les bibliothèques du serveur (Films, Séries, 4K…), comme sur la TV
+    var sourceModeName by rememberSaveable {
+        mutableStateOf(if (com.nuvio.app.lumio.LumioMode.ENABLED) LibraryViewMode.Servers.name else LibraryViewMode.Saved.name)
+    }
     val sourceMode = remember(sourceModeName, hasServers) {
         runCatching { LibraryViewMode.valueOf(sourceModeName) }.getOrDefault(LibraryViewMode.Saved)
             .takeUnless { it == LibraryViewMode.Servers && !hasServers }
@@ -262,6 +265,19 @@ fun LibraryScreen(
         if (!screenActive) return@ScreenActivityEffect
         scrollToTopRequests.collect {
             listState.animateScrollToItem(0)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        // Lumio : relit la liste des bibliothèques Jellyfin (une bibliothèque ajoutée, comme « 4K », apparaît toute seule)
+        if (!com.nuvio.app.lumio.LumioMode.ENABLED) return@LaunchedEffect
+        ServerRepository.enabledConnections().forEach { connection ->
+            try {
+                ServerRepository.refreshLibraries(connection.id)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+            }
         }
     }
 

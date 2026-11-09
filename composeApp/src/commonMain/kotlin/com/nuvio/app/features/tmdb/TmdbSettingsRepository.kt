@@ -42,7 +42,11 @@ object TmdbSettingsRepository {
         return _uiState.value
     }
 
-    fun effectiveApiKey(): String = snapshot().apiKey.ifBlank { TmdbConfig.API_KEY }
+    /** Lumio : clé TMDB partagée par le serveur Lumio (/api/config/tmdb), gardée en mémoire seulement. */
+    @kotlin.concurrent.Volatile
+    var lumioServerKey: String = ""
+
+    fun effectiveApiKey(): String = snapshot().apiKey.ifBlank { lumioServerKey.ifBlank { TmdbConfig.API_KEY } }
 
     fun setEnabled(value: Boolean) {
         ensureLoaded()
@@ -165,10 +169,10 @@ object TmdbSettingsRepository {
         val wasLoaded = hasLoaded
         val previousApiKey = apiKey
         hasLoaded = true
-        enabled = TmdbSettingsStorage.loadEnabled() ?: false
+        enabled = TmdbSettingsStorage.loadEnabled() ?: com.nuvio.app.lumio.LumioMode.ENABLED
         apiKey = TmdbSettingsStorage.loadApiKey()?.trim().orEmpty()
         val storedLanguage = TmdbSettingsStorage.loadLanguage()
-        language = if (storedLanguage == null) "en" else normalizeLanguage(storedLanguage)
+        language = if (storedLanguage == null) (if (com.nuvio.app.lumio.LumioMode.ENABLED) "fr" else "en") else normalizeLanguage(storedLanguage)
         useTrailers = TmdbSettingsStorage.loadUseTrailers() ?: true
         useArtwork = TmdbSettingsStorage.loadUseArtwork() ?: true
         useBasicInfo = TmdbSettingsStorage.loadUseBasicInfo() ?: true
