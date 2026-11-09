@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -21,15 +22,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.MutableStateFlow
 
-/** Lumio : tri de la grille d'une bibliothèque du serveur. */
+/**
+ * Lumio : tri des bibliothèques du serveur.
+ * Par défaut « Nouveautés » : par date de sortie, la plus récente en premier (2026 avant 2025…), comme sur Lumio TV.
+ * C'est aussi le tri des rangées de l'accueil.
+ */
 enum class LumioLibrarySort(val label: String, val sortBy: String, val sortOrder: String) {
+    NEWEST("Nouveautés", "PremiereDate,ProductionYear,SortName", "Descending"),
     RECENT("Ajout récent", "DateCreated,SortName", "Descending"),
     NAME("A-Z", "SortName", "Ascending"),
-    YEAR("Année", "ProductionYear,PremiereDate,SortName", "Descending"),
     RATING("Note", "CommunityRating,SortName", "Descending");
 
     companion object {
-        val current = MutableStateFlow(RECENT)
+        val current = MutableStateFlow(NEWEST)
+    }
+}
+
+/** Remet le tri par défaut quand on quitte la grille (l'accueil garde « Nouveautés »). */
+@Composable
+fun LumioSortReset() {
+    DisposableEffect(Unit) {
+        onDispose { LumioLibrarySort.current.value = LumioLibrarySort.NEWEST }
     }
 }
 

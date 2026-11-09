@@ -7,6 +7,8 @@ import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -1162,6 +1164,17 @@ fun HomeScreen(
                         disintegrationRequest = continueWatchingDisintegrationRequest,
                     )
 
+                    // Lumio : plateformes (Netflix, Disney+…) et leurs dernières sorties
+                    if (com.nuvio.app.lumio.LumioMode.ENABLED) {
+                        item(key = "lumio_platforms", contentType = "lumio_platforms") {
+                            com.nuvio.app.lumio.LumioPlatformsSection(
+                                sectionPadding = homeSectionPadding,
+                                onPosterClick = onPosterClick,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
+                        }
+                    }
+
                     keyedEnabledHomeItems.forEach { keyedSettingsItem ->
                         val settingsItem = keyedSettingsItem.value
                         if (settingsItem.isCollection) {
@@ -1202,6 +1215,15 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+        // Lumio : pastille serveur allumé / éteint en haut de l'accueil
+        if (com.nuvio.app.lumio.LumioMode.ENABLED) {
+            com.nuvio.app.lumio.LumioServerBadge(
+                modifier = Modifier
+                    .align(androidx.compose.ui.Alignment.TopEnd)
+                    .windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.statusBars)
+                    .padding(top = 6.dp, end = 16.dp),
+            )
         }
     }
 }

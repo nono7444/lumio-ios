@@ -160,6 +160,9 @@ fun CatalogScreen(
         }
     }
 
+    // Lumio : en quittant la grille, l'accueil repasse en « Nouveautés »
+    if (com.nuvio.app.lumio.LumioMode.ENABLED && target is CatalogTarget.Server) com.nuvio.app.lumio.LumioSortReset()
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()

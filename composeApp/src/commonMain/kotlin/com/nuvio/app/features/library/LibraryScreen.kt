@@ -158,6 +158,42 @@ fun LibraryScreen(
             .takeUnless { it == LibraryViewMode.Servers && !hasServers }
             ?: LibraryViewMode.Saved
     }
+    // Lumio : onglets « Sorties » et « Demandes »
+    var lumioReleases by remember { mutableStateOf<com.nuvio.app.lumio.LumioLoad<com.nuvio.app.lumio.LumioReleases.Result>>(com.nuvio.app.lumio.LumioLoad.Loading) }
+    var lumioReleasesRequest by remember { mutableStateOf(0) }
+    var lumioRequests by remember { mutableStateOf<com.nuvio.app.lumio.LumioLoad<List<com.nuvio.app.lumio.LumioListedRequest>>>(com.nuvio.app.lumio.LumioLoad.Loading) }
+    var lumioRequestsRequest by remember { mutableStateOf(0) }
+    var lumioRequestFilterName by rememberSaveable { mutableStateOf(com.nuvio.app.lumio.LumioRequestFilter.ONGOING.name) }
+    LaunchedEffect(sourceMode, lumioReleasesRequest) {
+        if (sourceMode == LibraryViewMode.Releases) {
+            if (lumioReleases !is com.nuvio.app.lumio.LumioLoad.Ready || lumioReleasesRequest > 0) {
+                lumioReleases = com.nuvio.app.lumio.LumioLoad.Loading
+            }
+            lumioReleases = try {
+                com.nuvio.app.lumio.LumioLoad.Ready(com.nuvio.app.lumio.LumioReleases.load(force = lumioReleasesRequest > 0))
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                com.nuvio.app.lumio.LumioLoad.Failed(e.message ?: "Sorties indisponibles")
+            }
+        }
+    }
+    LaunchedEffect(sourceMode, lumioRequestsRequest) {
+        if (sourceMode == LibraryViewMode.Requests) {
+            // Rafraîchi toutes les 10 s tant que l'onglet est ouvert (progression des téléchargements)
+            while (true) {
+                val next = try {
+                    com.nuvio.app.lumio.LumioLoad.Ready(com.nuvio.app.lumio.LumioClient.requests())
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    com.nuvio.app.lumio.LumioLoad.Failed(e.message ?: "Demandes indisponibles")
+                }
+                if (next is com.nuvio.app.lumio.LumioLoad.Ready || lumioRequests !is com.nuvio.app.lumio.LumioLoad.Ready) lumioRequests = next
+                kotlinx.coroutines.delay(10_000)
+            }
+        }
+    }
     var serverShelves by remember { mutableStateOf<List<LibraryServerShelf>?>(null) }
     var serverShelvesRequest by remember { mutableStateOf(0) }
     var selectedProviderId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -336,7 +372,11 @@ fun LibraryScreen(
                             .padding(LocalVerticalBarPadding.current),
                     ) {
                         NuvioScreenHeader(
-                            title = if (sourceMode != LibraryViewMode.Saved) {
+                            title = if (sourceMode == LibraryViewMode.Releases) {
+                                "Sorties"
+                            } else if (sourceMode == LibraryViewMode.Requests) {
+                                "Demandes"
+                            } else if (sourceMode != LibraryViewMode.Saved) {
                                 stringResource(Res.string.library_title)
                             } else {
                                 when (uiState.sourceMode) {
@@ -430,6 +470,24 @@ fun LibraryScreen(
                     onBackToItems = { selectedCloudItemKey = null },
                     onRefresh = { CloudLibraryRepository.refresh() },
                     onConnectCloudClick = onConnectCloudClick,
+                )
+            } else if (sourceMode == LibraryViewMode.Releases) {
+                com.nuvio.app.lumio.lumioReleasesContent(
+                    state = lumioReleases,
+                    onPosterClick = onPreviewClick,
+                    onRetry = { lumioReleasesRequest++ },
+                )
+            } else if (sourceMode == LibraryViewMode.Requests) {
+                com.nuvio.app.lumio.lumioRequestsContent(
+                    state = lumioRequests,
+                    filter = runCatching { com.nuvio.app.lumio.LumioRequestFilter.valueOf(lumioRequestFilterName) }
+                        .getOrDefault(com.nuvio.app.lumio.LumioRequestFilter.ONGOING),
+                    onFilterChange = { lumioRequestFilterName = it.name },
+                    onPosterClick = onPreviewClick,
+                    onRetry = {
+                        lumioRequests = com.nuvio.app.lumio.LumioLoad.Loading
+                        lumioRequestsRequest++
+                    },
                 )
             } else if (sourceMode == LibraryViewMode.Servers) {
                 serverLibraryContent(
@@ -755,26 +813,57 @@ private fun LibrarySourceSwitch(
     onModeSelected: (LibraryViewMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        LibraryChip(
-            label = stringResource(Res.string.library_source_saved),
-            selected = selectedMode == LibraryViewMode.Saved,
-            onClick = { onModeSelected(LibraryViewMode.Saved) },
-        )
-        LibraryChip(
-            label = stringResource(Res.string.library_source_cloud),
-            selected = selectedMode == LibraryViewMode.Cloud,
-            onClick = { onModeSelected(LibraryViewMode.Cloud) },
-        )
-        if (showServers) {
+    if (com.nuvio.app.lumio.LumioMode.ENABLED) {
+        // Lumio : Bibliothèque (serveur), Sorties, Demandes, puis les titres enregistrés
+        Row(
+            modifier = modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (showServers) {
+                LibraryChip(
+                    label = "Bibliothèque",
+                    selected = selectedMode == LibraryViewMode.Servers,
+                    onClick = { onModeSelected(LibraryViewMode.Servers) },
+                )
+            }
             LibraryChip(
-                label = stringResource(Res.string.library_source_servers),
-                selected = selectedMode == LibraryViewMode.Servers,
-                onClick = { onModeSelected(LibraryViewMode.Servers) },
+                label = "Sorties",
+                selected = selectedMode == LibraryViewMode.Releases,
+                onClick = { onModeSelected(LibraryViewMode.Releases) },
             )
+            LibraryChip(
+                label = "Demandes",
+                selected = selectedMode == LibraryViewMode.Requests,
+                onClick = { onModeSelected(LibraryViewMode.Requests) },
+            )
+            LibraryChip(
+                label = stringResource(Res.string.library_source_saved),
+                selected = selectedMode == LibraryViewMode.Saved,
+                onClick = { onModeSelected(LibraryViewMode.Saved) },
+            )
+        }
+    } else {
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            LibraryChip(
+                label = stringResource(Res.string.library_source_saved),
+                selected = selectedMode == LibraryViewMode.Saved,
+                onClick = { onModeSelected(LibraryViewMode.Saved) },
+            )
+            LibraryChip(
+                label = stringResource(Res.string.library_source_cloud),
+                selected = selectedMode == LibraryViewMode.Cloud,
+                onClick = { onModeSelected(LibraryViewMode.Cloud) },
+            )
+            if (showServers) {
+                LibraryChip(
+                    label = stringResource(Res.string.library_source_servers),
+                    selected = selectedMode == LibraryViewMode.Servers,
+                    onClick = { onModeSelected(LibraryViewMode.Servers) },
+                )
+            }
         }
     }
 }
@@ -1240,6 +1329,9 @@ private enum class LibraryViewMode {
     Saved,
     Cloud,
     Servers,
+    // Lumio : sorties numériques et demandes au serveur
+    Releases,
+    Requests,
 }
 
 private fun LazyListScope.librarySections(

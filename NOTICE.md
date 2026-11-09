@@ -16,7 +16,12 @@ Base : NuvioMedia/NuvioMobile, commit `de60c5a` (8 novembre 2026, version 0.6.10
 - Bibliothèque : ouvre directement les bibliothèques du serveur (Films, Séries, 4K…) et relit leur liste à chaque ouverture.
 - Recherche : en plus du serveur, une rangée « Films et séries » TMDB (clé TMDB fournie par le serveur Lumio, gardée en mémoire) pour ouvrir un titre absent et le demander (`LumioTmdb`).
 - Après une demande, la fiche suit le téléchargement et « Lire » trouve le titre dès son arrivée dans Jellyfin (cache des recherches serveur vidé).
-- Bibliothèque en grandes cartes (image, icône, nom, nombre de titres) ; la grille d'une bibliothèque se trie (Ajout récent, A-Z, Année, Note) (`LumioLibraryCard`, `LumioLibrarySort`).
+- Bibliothèque en grandes cartes (image, icône, nom, nombre de titres) ; la grille d'une bibliothèque se trie (Nouveautés, Ajout récent, A-Z, Note) (`LumioLibraryCard`, `LumioLibrarySort`).
 - Le nom du serveur n'apparaît plus dans les rangées (« Films », « Séries »…).
 - « Regarder » lance directement la meilleure source (lecture auto par défaut, modifiable dans Lecture).
 - Gestion des addons et des plugins retirée des réglages.
+- Accueil et bibliothèques triés par date de sortie, la plus récente en premier (« Nouveautés »), comme sur Lumio TV.
+- Accueil : barre des plateformes (Netflix, Disney+, Prime Video…) servie par le serveur Lumio, avec leurs dernières sorties films et séries (`LumioHome`).
+- Accueil : pastille en haut à droite indiquant si le serveur Lumio est en ligne.
+- Bibliothèque : onglets « Sorties » (sorties numériques TMDB, films et nouvelles saisons, `LumioReleases`) et « Demandes » (en cours / terminées, progression du téléchargement) (`LumioTabs`).
+- Icône : celle de Nuvio, avec un « L » à la place du bouton lecture.

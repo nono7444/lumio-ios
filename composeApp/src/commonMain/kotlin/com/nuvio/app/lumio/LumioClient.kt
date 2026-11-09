@@ -40,6 +40,45 @@ data class LumioMedia(val status: Int, val seasons: List<LumioSeason>, val reque
 
 class LumioException(message: String) : Exception(message)
 
+/** Une demande vue dans l'onglet Demandes. */
+data class LumioListedRequest(
+    val id: String,
+    val type: String,
+    val tmdbId: Int?,
+    val title: String,
+    val year: String?,
+    val poster: String?,
+    val status: Int,
+    val mediaStatus: Int,
+    val requestedBy: String?,
+    val createdAt: String?,
+    val progress: Int?,
+    val downloadState: String?,
+    val seasons: List<Int>,
+)
+
+/** Plateforme de streaming (Netflix, Disney+…) servie par le serveur Lumio. */
+data class LumioPlatformTitle(
+    val type: String,
+    val tmdbId: Int,
+    val title: String,
+    val year: String?,
+    val date: String?,
+    val poster: String?,
+    val available: Boolean,
+)
+
+data class LumioPlatform(val id: String, val name: String, val icon: String?, val logo: String?, val color: String?)
+
+/** Statuts d'une demande sur le serveur Lumio. */
+object LumioRequestStatus {
+    const val PENDING = 1
+    const val APPROVED = 2
+    const val DECLINED = 3
+    const val FAILED = 4
+    const val COMPLETED = 5
+}
+
 /**
  * Lumio iOS : demandes de films et séries au serveur Lumio, avec le compte Jellyfin connecté
  * (même fonctionnement que l'appli Lumio et Lumio TV). Aucune clé dans l'appli : le jeton Jellyfin suffit.
@@ -112,6 +151,77 @@ object LumioClient {
             throw LumioException(obj?.get("error")?.jsonPrimitive?.content ?: "Erreur $code")
         }
         return obj ?: JsonObject(emptyMap())
+    }
+
+    /** Le serveur Lumio répond-il ? (pastille en haut de l'accueil) */
+    suspend fun isOnline(): Boolean = try {
+        val session = jellyfin()
+        if (session == null) {
+            false
+        } else {
+            val (code, _) = send(HttpMethod.Get, base(session) + "/health", null)
+            if (code !in 200..299) resolvedBase = null
+            code in 200..299
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        resolvedBase = null
+        false
+    }
+
+    /** Demandes (les miennes et, si le serveur le permet, celles de la famille), plus récentes d'abord. */
+    suspend fun requests(): List<LumioListedRequest> {
+        val o = call(HttpMethod.Get, "/api/requests?filter=all&take=100&sort=modified")
+        fun JsonObject.str(k: String) = this[k]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+        fun JsonObject.int(k: String) = this[k]?.jsonPrimitive?.intOrNull
+        return (o["results"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }.map { r ->
+            val dl = r["download"] as? JsonObject
+            LumioListedRequest(
+                id = r.str("id").orEmpty(),
+                type = r.str("type") ?: "movie",
+                tmdbId = r.int("tmdbId"),
+                title = r.str("title") ?: "Sans titre",
+                year = r.str("year"),
+                poster = r.str("poster"),
+                status = r.int("status") ?: LumioRequestStatus.PENDING,
+                mediaStatus = r.int("mediaStatus") ?: LumioStatus.UNKNOWN,
+                requestedBy = (r["requestedBy"] as? JsonObject)?.str("name"),
+                createdAt = r.str("createdAt"),
+                progress = dl?.int("progress"),
+                downloadState = dl?.str("state"),
+                seasons = (r["seasons"] as? JsonArray).orEmpty().mapNotNull { it.jsonPrimitive.intOrNull },
+            )
+        }
+    }
+
+    /** Plateformes de streaming connues du serveur (Netflix, Disney+, Prime Video…). */
+    suspend fun platforms(): List<LumioPlatform> {
+        val o = call(HttpMethod.Get, "/api/platforms")
+        fun JsonObject.str(k: String) = this[k]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+        return (o["platforms"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }.mapNotNull { p ->
+            val id = p.str("id") ?: return@mapNotNull null
+            LumioPlatform(id, p.str("name") ?: id, p.str("icon"), p.str("logo"), p.str("color"))
+        }
+    }
+
+    /** Dernières sorties d'une plateforme (films et séries, déjà sorties), de la plus récente à la plus ancienne. */
+    suspend fun platformLatest(id: String): List<LumioPlatformTitle> {
+        val o = call(HttpMethod.Get, "/api/platforms/$id?sort=desc")
+        fun JsonObject.str(k: String) = this[k]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+        val list = (o["items"] as? JsonArray) ?: (o["latest"] as? JsonArray)
+        return list.orEmpty().mapNotNull { it as? JsonObject }.mapNotNull { t ->
+            val tmdbId = t["tmdbId"]?.jsonPrimitive?.intOrNull ?: return@mapNotNull null
+            LumioPlatformTitle(
+                type = if (t.str("type") == "tv") "series" else "movie",
+                tmdbId = tmdbId,
+                title = t.str("title") ?: return@mapNotNull null,
+                year = t.str("year"),
+                date = t.str("date"),
+                poster = t.str("poster"),
+                available = t["available"]?.jsonPrimitive?.contentOrNull == "true",
+            )
+        }
     }
 
     /** Clé TMDB partagée par le serveur Lumio (jamais écrite dans l'appli). */
