@@ -181,6 +181,14 @@ fun CatalogScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
+                if (com.nuvio.app.lumio.LumioMode.ENABLED && target is CatalogTarget.Server && target.collectionId == null) {
+                    // Lumio : tri de la bibliothèque
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "lumio-sort") {
+                        com.nuvio.app.lumio.LumioSortChips(
+                            onChange = { CatalogRepository.load(target = target, force = true) },
+                        )
+                    }
+                }
                 if (uiState.items.isEmpty() && uiState.isLoading) {
                     items(columns * 3) {
                         SkeletonPoster(

@@ -92,7 +92,7 @@ object ServerRepository {
     fun provider(connection: ServerConnection): ServerProvider? = ServerProviders.forId(connection.providerId)
 
     fun sourceLabel(connection: ServerConnection): String =
-        "${provider(connection)?.displayName ?: connection.providerId} · ${connection.name}"
+        if (com.nuvio.app.lumio.LumioMode.ENABLED) "Lumio" else "${provider(connection)?.displayName ?: connection.providerId} · ${connection.name}"
 
     fun session(connectionId: String): ServerSession? {
         val connection = connection(connectionId)?.takeIf { it.enabled } ?: return null

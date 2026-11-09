@@ -173,7 +173,9 @@ object PlayerSettingsRepository {
     private var vodCacheEnabled = false
     private var vodCacheSizeMode = VodCacheSizeMode.AUTO
     private var vodCacheSizeMb = VodCacheSizing.DEFAULT_SIZE_MB
-    private var streamAutoPlayMode = StreamAutoPlayMode.MANUAL
+    // Lumio : « Regarder » lance directement la meilleure source
+    private val defaultAutoPlayMode get() = if (com.nuvio.app.lumio.LumioMode.ENABLED) StreamAutoPlayMode.FIRST_STREAM else StreamAutoPlayMode.MANUAL
+    private var streamAutoPlayMode = defaultAutoPlayMode
     private var streamAutoPlaySource = StreamAutoPlaySource.ALL_SOURCES
     private var streamAutoPlaySelectedAddons: Set<String> = emptySet()
     private var streamAutoPlaySelectedPlugins: Set<String> = emptySet()
@@ -272,7 +274,7 @@ object PlayerSettingsRepository {
         vodCacheSizeMode = VodCacheSizeMode.AUTO
         vodCacheSizeMb = VodCacheSizing.DEFAULT_SIZE_MB
         applyExoPlayerNativeMemory(false)
-        streamAutoPlayMode = StreamAutoPlayMode.MANUAL
+        streamAutoPlayMode = defaultAutoPlayMode
         streamAutoPlaySource = StreamAutoPlaySource.ALL_SOURCES
         streamAutoPlaySelectedAddons = emptySet()
         streamAutoPlaySelectedPlugins = emptySet()
@@ -414,7 +416,7 @@ object PlayerSettingsRepository {
             ?: PlaybackBufferSettings.DEFAULT_TARGET_BUFFER_MB
         streamAutoPlayMode = PlayerSettingsStorage.loadStreamAutoPlayMode()
             ?.let { runCatching { StreamAutoPlayMode.valueOf(it) }.getOrNull() }
-            ?: StreamAutoPlayMode.MANUAL
+            ?: defaultAutoPlayMode
         streamAutoPlaySource = PlayerSettingsStorage.loadStreamAutoPlaySource()
             ?.let { runCatching { StreamAutoPlaySource.valueOf(it) }.getOrNull() }
             ?: StreamAutoPlaySource.ALL_SOURCES

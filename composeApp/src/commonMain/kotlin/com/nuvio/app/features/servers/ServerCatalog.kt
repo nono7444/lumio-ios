@@ -43,7 +43,7 @@ internal data class ServerLibraryRef(
     val library: ServerLibrary,
 ) {
     val title: String
-        get() = "${connection.name} · ${library.name}"
+        get() = if (com.nuvio.app.lumio.LumioMode.ENABLED) library.name else "${connection.name} · ${library.name}"
 
     val target: CatalogTarget.Server
         get() = CatalogTarget.Server(connection.id, library.id, library.kind.contentType)
@@ -102,7 +102,7 @@ internal object ServerCatalog {
         if (connections.isEmpty()) return emptyList()
         val rowName = runBlocking { getString(Res.string.servers_resume_row) }
         return connections.map { connection ->
-            val title = "${connection.name} · $rowName"
+            val title = if (com.nuvio.app.lumio.LumioMode.ENABLED) rowName else "${connection.name} · $rowName"
             HomeCatalogDefinition(
                 key = homeKey(connection.id, RESUME_ID),
                 defaultTitle = title,
@@ -186,6 +186,17 @@ internal object ServerCatalog {
         )
     }
 
+    /** Lumio : nombre de titres dans une bibliothèque (pour les cartes de la Bibliothèque). */
+    suspend fun libraryTotal(ref: ServerLibraryRef): Int? = try {
+        ServerRepository.call(ref.connection.id) { provider, session ->
+            provider.libraryPage(session, ref.library, 0, 1)
+        }.totalCount
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
+    }
+
     suspend fun search(ref: ServerSearchRef, query: String): List<MetaPreview> =
         ServerRepository.call(ref.connection.id) { provider, session ->
             if (!provider.supports(ServerCapability.SEARCH)) throw ServerException(ServerFailure.UNSUPPORTED)
@@ -197,7 +208,7 @@ internal object ServerCatalog {
         val label = ServerRepository.sourceLabel(ref.connection)
         return HomeCatalogSection(
             key = "${homeKey(ref.connection.id, SEARCH_PREFIX + ref.kind.contentType)}:${query.lowercase()}",
-            title = "${ref.connection.name} · ${getString(ref.kind.searchLabel())}",
+            title = if (com.nuvio.app.lumio.LumioMode.ENABLED) getString(ref.kind.searchLabel()) else "${ref.connection.name} · ${getString(ref.kind.searchLabel())}",
             subtitle = label,
             addonName = label,
             target = CatalogTarget.Server(ref.connection.id, null, ref.kind.contentType),

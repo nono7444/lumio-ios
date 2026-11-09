@@ -29,13 +29,18 @@ internal data class LibraryServerShelf(
     val ref: ServerLibraryRef,
     val section: HomeCatalogSection? = null,
     val failure: ServerFailure? = null,
+    val total: Int? = null,
 )
 
 internal suspend fun loadServerShelves(): List<LibraryServerShelf> = coroutineScope {
     ServerCatalog.libraries().map { ref ->
         async {
             try {
-                LibraryServerShelf(ref, section = ServerCatalog.librarySection(ref, SERVER_SHELF_LIMIT))
+                LibraryServerShelf(
+                    ref,
+                    section = ServerCatalog.librarySection(ref, SERVER_SHELF_LIMIT),
+                    total = if (com.nuvio.app.lumio.LumioMode.ENABLED) ServerCatalog.libraryTotal(ref) else null,
+                )
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
@@ -67,7 +72,19 @@ internal fun LazyListScope.serverLibraryContent(
 
         else -> shelves.forEach { shelf ->
             val section = shelf.section
-            if (section != null && section.items.isNotEmpty()) {
+            if (com.nuvio.app.lumio.LumioMode.ENABLED && section != null && section.items.isNotEmpty()) {
+                // Lumio : une grande carte par bibliothèque, comme dans l'appli Lumio
+                item(key = "server-card:${section.key}") {
+                    com.nuvio.app.lumio.LumioLibraryCard(
+                        name = shelf.ref.library.name,
+                        kind = shelf.ref.library.kind,
+                        total = shelf.total ?: section.availableItemCount.takeIf { !section.hasMore },
+                        items = section.items,
+                        onClick = { onCatalogClick?.invoke(section) },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+            } else if (section != null && section.items.isNotEmpty()) {
                 item(key = "server-shelf:${section.key}") {
                     HomeCatalogRowSection(
                         section = section,

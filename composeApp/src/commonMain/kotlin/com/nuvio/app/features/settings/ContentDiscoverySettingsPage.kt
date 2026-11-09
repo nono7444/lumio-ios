@@ -55,7 +55,8 @@ internal fun LazyListScope.contentDiscoveryContent(
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
-                SettingsNavigationRow(
+                // Lumio : pas de gestion d'addons ni de plugins, seulement ton serveur
+                if (!com.nuvio.app.lumio.LumioMode.ENABLED) SettingsNavigationRow(
                     title = stringResource(Res.string.compose_settings_page_addons),
                     description = stringResource(
                         if (AppFeaturePolicy.personalMediaAddonCopyEnabled) {
@@ -73,7 +74,7 @@ internal fun LazyListScope.contentDiscoveryContent(
                     isTablet = isTablet,
                     onClick = onMediaServersClick,
                 )
-                if (showPluginsEntry) {
+                if (showPluginsEntry && !com.nuvio.app.lumio.LumioMode.ENABLED) {
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_plugins),
                         description = stringResource(Res.string.settings_content_discovery_plugins_description),

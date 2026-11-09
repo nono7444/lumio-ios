@@ -147,8 +147,16 @@ internal abstract class MediaBrowserProvider(
         ItemsResult.serializer(),
         itemQuery(library) + mapOf(
             "genreIds" to genreId?.takeIf { it.isNotEmpty() },
-            "sortBy" to if (library.kind == ServerMediaKind.COLLECTION) "SortName" else "DateCreated,SortName",
-            "sortOrder" to if (library.kind == ServerMediaKind.COLLECTION) "Ascending" else "Descending",
+            "sortBy" to when {
+                library.kind == ServerMediaKind.COLLECTION -> "SortName"
+                com.nuvio.app.lumio.LumioMode.ENABLED -> com.nuvio.app.lumio.LumioLibrarySort.current.value.sortBy
+                else -> "DateCreated,SortName"
+            },
+            "sortOrder" to when {
+                library.kind == ServerMediaKind.COLLECTION -> "Ascending"
+                com.nuvio.app.lumio.LumioMode.ENABLED -> com.nuvio.app.lumio.LumioLibrarySort.current.value.sortOrder
+                else -> "Descending"
+            },
             "startIndex" to start.toString(),
             "limit" to limit.toString(),
             "enableTotalRecordCount" to "true",
