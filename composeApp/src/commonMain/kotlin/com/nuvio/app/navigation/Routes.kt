@@ -156,3 +156,22 @@ data class PlayerRoute(
     override val hidesNavigationBar: Boolean
         get() = true
 }
+
+// ——— Lumio ———
+
+/** Page d'une plateforme (Netflix, Disney+…) : ses dernières sorties. */
+@Serializable
+data class LumioPlatformRoute(
+    val platformId: String,
+    val platformName: String,
+) : AppRoute {
+    override val title: String
+        get() = platformName
+}
+
+/** Recherche ouverte depuis la loupe de l'accueil (l'onglet Recherche n'est plus dans la barre). */
+@Serializable
+data object LumioSearchRoute : AppRoute {
+    override val title: String
+        get() = "Recherche"
+}

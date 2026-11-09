@@ -421,6 +421,7 @@ internal fun MainAppContent(
                 searchScrollToTopRequests.tryEmit(Unit)
             }
             AppScreenTab.Library -> libraryScrollToTopRequests.tryEmit(Unit)
+            AppScreenTab.Requests, AppScreenTab.Calendar -> Unit
             AppScreenTab.Settings -> settingsRootActionRequests.tryEmit(Unit)
         }
     }
@@ -1313,6 +1314,7 @@ internal fun MainAppContent(
                     LocalUseNativeNavigation provides useNativeNavigation,
                     LocalNativeNavigationBarHidden provides (currentRoute?.hidesNavigationBar == true),
                     LocalVerticalBarPadding provides if (drawsUnderVerticalBar) verticalBarPadding else PaddingValues(),
+                    com.nuvio.app.lumio.LocalLumioNavigate provides { route -> navController.navigate(route) },
                 ) {
                 NavDisplay(
                     backStack = navBackStack,
@@ -1580,6 +1582,23 @@ internal fun MainAppContent(
                         openExternalStreamUrl = ::openExternalStreamUrl,
                         onOpenPartyMedia = ::openPartyMedia,
                     )
+                }
+                entry<LumioPlatformRoute> { route ->
+                    com.nuvio.app.lumio.LumioPlatformScreen(
+                        platformId = route.platformId,
+                        platformName = route.platformName,
+                        onPosterClick = navController::openPreview,
+                    )
+                }
+                entry<LumioSearchRoute> {
+                    com.nuvio.app.lumio.LumioSearchPage {
+                        com.nuvio.app.features.search.SearchScreen(
+                            modifier = Modifier.fillMaxSize(),
+                            onPosterClick = navController::openPreview,
+                            onPosterLongClick = { openPosterActions(PosterActionTarget(preview = it)) },
+                            searchFocusRequestCount = 1,
+                        )
+                    }
                 }
                 entry<CatalogRoute> { route ->
                     CatalogDestination(

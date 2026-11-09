@@ -45,6 +45,8 @@ import nuvio.composeapp.generated.resources.compose_nav_search
 import nuvio.composeapp.generated.resources.sidebar_library
 import nuvio.composeapp.generated.resources.sidebar_search
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Inbox
 
 @Composable
 internal fun MainTabsDestination(
@@ -79,14 +81,15 @@ internal fun MainTabsDestination(
         val navBarHazeState = rememberHazeState()
         val navBarStyleSetting by remember { ThemeSettingsRepository.navBarStyle }.collectAsStateWithLifecycle()
         val navBarGlowEnabled by ThemeSettingsRepository.navBarGlowEnabled.collectAsStateWithLifecycle()
-        val floatingNavigationItems = listOf(
+        val floatingNavigationItems = listOfNotNull(
             FloatingNavigationItem(
                 selected = selectedTab == AppScreenTab.Home,
                 onClick = { onTabSelected(AppScreenTab.Home) },
                 icon = Icons.Filled.Home,
                 label = stringResource(Res.string.compose_nav_home),
             ),
-            FloatingNavigationItem(
+            // Lumio : la recherche est une loupe en haut de l'accueil
+            if (com.nuvio.app.lumio.LumioMode.ENABLED) null else FloatingNavigationItem(
                 selected = selectedTab == AppScreenTab.Search,
                 onClick = { onTabSelected(AppScreenTab.Search) },
                 drawable = Res.drawable.sidebar_search,
@@ -98,6 +101,18 @@ internal fun MainTabsDestination(
                 drawable = Res.drawable.sidebar_library,
                 label = stringResource(Res.string.compose_nav_library),
             ),
+            if (com.nuvio.app.lumio.LumioMode.ENABLED) FloatingNavigationItem(
+                selected = selectedTab == AppScreenTab.Requests,
+                onClick = { onTabSelected(AppScreenTab.Requests) },
+                icon = Icons.Rounded.Inbox,
+                label = "Demandes",
+            ) else null,
+            if (com.nuvio.app.lumio.LumioMode.ENABLED) FloatingNavigationItem(
+                selected = selectedTab == AppScreenTab.Calendar,
+                onClick = { onTabSelected(AppScreenTab.Calendar) },
+                icon = Icons.Rounded.CalendarMonth,
+                label = "Calendrier",
+            ) else null,
             FloatingNavigationItem(
                 selected = selectedTab == AppScreenTab.Settings,
                 onClick = { onTabSelected(AppScreenTab.Settings) },
@@ -130,18 +145,34 @@ internal fun MainTabsDestination(
                             icon = Icons.Filled.Home,
                             contentDescription = stringResource(Res.string.compose_nav_home),
                         )
-                        NavItem(
-                            selected = selectedTab == AppScreenTab.Search,
-                            onClick = { onTabSelected(AppScreenTab.Search) },
-                            icon = Res.drawable.sidebar_search,
-                            contentDescription = stringResource(Res.string.compose_nav_search),
-                        )
+                        if (!com.nuvio.app.lumio.LumioMode.ENABLED) {
+                            NavItem(
+                                selected = selectedTab == AppScreenTab.Search,
+                                onClick = { onTabSelected(AppScreenTab.Search) },
+                                icon = Res.drawable.sidebar_search,
+                                contentDescription = stringResource(Res.string.compose_nav_search),
+                            )
+                        }
                         NavItem(
                             selected = selectedTab == AppScreenTab.Library,
                             onClick = { onTabSelected(AppScreenTab.Library) },
                             icon = Res.drawable.sidebar_library,
                             contentDescription = stringResource(Res.string.compose_nav_library),
                         )
+                        if (com.nuvio.app.lumio.LumioMode.ENABLED) {
+                            NavItem(
+                                selected = selectedTab == AppScreenTab.Requests,
+                                onClick = { onTabSelected(AppScreenTab.Requests) },
+                                icon = Icons.Rounded.Inbox,
+                                contentDescription = "Demandes",
+                            )
+                            NavItem(
+                                selected = selectedTab == AppScreenTab.Calendar,
+                                onClick = { onTabSelected(AppScreenTab.Calendar) },
+                                icon = Icons.Rounded.CalendarMonth,
+                                contentDescription = "Calendrier",
+                            )
+                        }
                         NavItem(
                             selected = selectedTab == AppScreenTab.Settings,
                             onClick = { onTabSelected(AppScreenTab.Settings) },

@@ -21,7 +21,9 @@ Base : NuvioMedia/NuvioMobile, commit `de60c5a` (8 novembre 2026, version 0.6.10
 - « Regarder » lance directement la meilleure source (lecture auto par défaut, modifiable dans Lecture).
 - Gestion des addons et des plugins retirée des réglages.
 - Accueil et bibliothèques triés par date de sortie, la plus récente en premier (« Nouveautés »), comme sur Lumio TV.
-- Accueil : barre des plateformes (Netflix, Disney+, Prime Video…) servie par le serveur Lumio, avec leurs dernières sorties films et séries (`LumioHome`).
-- Accueil : pastille en haut à droite indiquant si le serveur Lumio est en ligne.
-- Bibliothèque : onglets « Sorties » (sorties numériques TMDB, films et nouvelles saisons, `LumioReleases`) et « Demandes » (en cours / terminées, progression du téléchargement) (`LumioTabs`).
+- Accueil : barre des plateformes (Netflix, Disney+, Prime Video…) servie par le serveur Lumio ; chaque logo ouvre une page avec les dernières sorties films et séries (`LumioHome`, `LumioScreens`).
+- Accueil : loupe de recherche et pastille indiquant si le serveur Lumio est en ligne, en haut à droite.
+- Barre d'onglets : Accueil, Bibliothèque, Demandes, Calendrier, Profil ; la recherche passe dans la loupe de l'accueil (`AppScreenTab`, `ContentView.swift`).
+- Onglet « Demandes » : demandes en cours / terminées, avec la progression du téléchargement (`LumioTabs`, `LumioScreens`).
+- Onglet « Calendrier » : sorties numériques TMDB (films et nouvelles saisons) jour par jour, déjà sorties ou à venir (`LumioReleases`, `LumioScreens`).
 - Icône : celle de Nuvio, avec un « L » à la place du bouton lecture.

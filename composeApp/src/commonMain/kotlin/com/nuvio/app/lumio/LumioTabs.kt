@@ -241,7 +241,7 @@ fun LumioPill(text: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun LumioCenteredLoader(text: String) {
+internal fun LumioCenteredLoader(text: String) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -253,7 +253,7 @@ private fun LumioCenteredLoader(text: String) {
 }
 
 @Composable
-private fun LumioMessage(text: String, onRetry: (() -> Unit)?) {
+internal fun LumioMessage(text: String, onRetry: (() -> Unit)?) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

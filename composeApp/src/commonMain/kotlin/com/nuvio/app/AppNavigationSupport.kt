@@ -48,6 +48,8 @@ internal val navigationSavedStateConfiguration = SavedStateConfiguration {
             subclass(StreamRoute::class, StreamRoute.serializer())
             subclass(CatalogRoute::class, CatalogRoute.serializer())
             subclass(PlayerRoute::class, PlayerRoute.serializer())
+            subclass(LumioPlatformRoute::class, LumioPlatformRoute.serializer())
+            subclass(LumioSearchRoute::class, LumioSearchRoute.serializer())
         }
     }
 }

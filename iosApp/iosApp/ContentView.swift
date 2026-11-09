@@ -331,20 +331,27 @@ final class TabNavigationCoordinator: ObservableObject {
 
 @available(iOS 16.0, *)
 enum NuvioAppTab: String, CaseIterable, Hashable {
+    // Lumio : Accueil, Bibliothèque, Demandes, Calendrier, Profil (la recherche est une loupe sur l'accueil)
     case home = "Home"
-    case search = "Search"
     case library = "Library"
+    case requests = "Requests"
+    case calendar = "Calendar"
     case settings = "Settings"
 
     var fallbackTitle: String {
-        String(localized: String.LocalizationValue(rawValue))
+        switch self {
+        case .requests: return "Demandes"
+        case .calendar: return "Calendrier"
+        default: return String(localized: String.LocalizationValue(rawValue))
+        }
     }
 
     static func from(kotlinName: String?) -> NuvioAppTab? {
         switch kotlinName?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
         case "home": return .home
-        case "search": return .search
         case "library": return .library
+        case "requests": return .requests
+        case "calendar": return .calendar
         case "settings", "profile": return .settings
         default: return nil
         }
@@ -353,8 +360,9 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
     var iconAssetName: String {
         switch self {
         case .home: return "NuvioTabHome"
-        case .search: return "NuvioTabSearch"
         case .library: return "NuvioTabLibrary"
+        case .requests: return "NuvioTabRequests"
+        case .calendar: return "NuvioTabCalendar"
         case .settings: return "NuvioTabProfile"
         }
     }
@@ -362,8 +370,9 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
     var fallbackSystemImage: String {
         switch self {
         case .home: return "house.fill"
-        case .search: return "magnifyingglass"
         case .library: return "rectangle.stack.fill"
+        case .requests: return "tray.full.fill"
+        case .calendar: return "calendar"
         case .settings: return "person.crop.circle.fill"
         }
     }
@@ -649,8 +658,9 @@ final class AppNavigationCoordinator: ObservableObject {
     @Published var isProfileSwitcherPresented = false
 
     let homeCoordinator = TabNavigationCoordinator()
-    let searchCoordinator = TabNavigationCoordinator()
     let libraryCoordinator = TabNavigationCoordinator()
+    let requestsCoordinator = TabNavigationCoordinator()
+    let calendarCoordinator = TabNavigationCoordinator()
     let settingsCoordinator = TabNavigationCoordinator()
     let appGateController = AppGateController()
     let profileSwitcherController = NativeProfileSwitcherController()
@@ -664,14 +674,15 @@ final class AppNavigationCoordinator: ObservableObject {
     }
 
     private var allCoordinators: [TabNavigationCoordinator] {
-        [homeCoordinator, searchCoordinator, libraryCoordinator, settingsCoordinator]
+        [homeCoordinator, libraryCoordinator, requestsCoordinator, calendarCoordinator, settingsCoordinator]
     }
 
     func coordinator(for tab: NuvioAppTab) -> TabNavigationCoordinator {
         switch tab {
         case .home: return homeCoordinator
-        case .search: return searchCoordinator
         case .library: return libraryCoordinator
+        case .requests: return requestsCoordinator
+        case .calendar: return calendarCoordinator
         case .settings: return settingsCoordinator
         }
     }
@@ -697,8 +708,9 @@ final class AppNavigationCoordinator: ObservableObject {
     ) {
         localizedTabTitles = [
             .home: home,
-            .search: search,
             .library: library,
+            .requests: "Demandes",
+            .calendar: "Calendrier",
             .settings: profile,
         ]
         localizedSwitchProfileTitle = switchProfile

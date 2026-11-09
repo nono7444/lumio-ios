@@ -24,6 +24,8 @@ internal enum class NativeNavigationTab {
     Home,
     Search,
     Library,
+    Requests,
+    Calendar,
     Settings,
     ;
 

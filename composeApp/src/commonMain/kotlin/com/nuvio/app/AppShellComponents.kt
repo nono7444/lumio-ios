@@ -175,6 +175,20 @@ internal fun AppTabHost(
                 )
             }
 
+            AppScreenTab.Requests -> {
+                com.nuvio.app.lumio.LumioRequestsScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    onPosterClick = actions.onPosterClick,
+                )
+            }
+
+            AppScreenTab.Calendar -> {
+                com.nuvio.app.lumio.LumioCalendarScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    onPosterClick = actions.onPosterClick,
+                )
+            }
+
             AppScreenTab.Settings -> {
                 SettingsScreen(
                     modifier = Modifier.fillMaxSize(),

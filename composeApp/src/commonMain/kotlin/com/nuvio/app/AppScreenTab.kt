@@ -6,6 +6,9 @@ enum class AppScreenTab {
     Home,
     Search,
     Library,
+    // Lumio : onglets Demandes et Calendrier
+    Requests,
+    Calendar,
     Settings,
     ;
 
@@ -19,6 +22,8 @@ internal fun AppScreenTab.toNativeNavigationTab(): NativeNavigationTab = when (t
     AppScreenTab.Home -> NativeNavigationTab.Home
     AppScreenTab.Search -> NativeNavigationTab.Search
     AppScreenTab.Library -> NativeNavigationTab.Library
+    AppScreenTab.Requests -> NativeNavigationTab.Requests
+    AppScreenTab.Calendar -> NativeNavigationTab.Calendar
     AppScreenTab.Settings -> NativeNavigationTab.Settings
 }
 
@@ -26,5 +31,7 @@ internal fun NativeNavigationTab.toAppScreenTab(): AppScreenTab = when (this) {
     NativeNavigationTab.Home -> AppScreenTab.Home
     NativeNavigationTab.Search -> AppScreenTab.Search
     NativeNavigationTab.Library -> AppScreenTab.Library
+    NativeNavigationTab.Requests -> AppScreenTab.Requests
+    NativeNavigationTab.Calendar -> AppScreenTab.Calendar
     NativeNavigationTab.Settings -> AppScreenTab.Settings
 }

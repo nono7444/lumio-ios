@@ -1169,7 +1169,6 @@ fun HomeScreen(
                         item(key = "lumio_platforms", contentType = "lumio_platforms") {
                             com.nuvio.app.lumio.LumioPlatformsSection(
                                 sectionPadding = homeSectionPadding,
-                                onPosterClick = onPosterClick,
                                 modifier = Modifier.padding(bottom = 12.dp),
                             )
                         }
@@ -1216,9 +1215,9 @@ fun HomeScreen(
                 }
             }
         }
-        // Lumio : pastille serveur allumé / éteint en haut de l'accueil
+        // Lumio : loupe (recherche) et pastille serveur allumé / éteint en haut de l'accueil
         if (com.nuvio.app.lumio.LumioMode.ENABLED) {
-            com.nuvio.app.lumio.LumioServerBadge(
+            com.nuvio.app.lumio.LumioHomeTopActions(
                 modifier = Modifier
                     .align(androidx.compose.ui.Alignment.TopEnd)
                     .windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.statusBars)
