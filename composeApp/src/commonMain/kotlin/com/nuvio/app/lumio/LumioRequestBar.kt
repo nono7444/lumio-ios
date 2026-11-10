@@ -1,6 +1,10 @@
 package com.nuvio.app.lumio
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -28,6 +33,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.details.MetaDetails
@@ -59,6 +65,7 @@ fun LumioRequestBar(meta: MetaDetails, modifier: Modifier = Modifier) {
     var reload by remember(meta.id) { mutableIntStateOf(0) }
     var busy by remember(meta.id) { mutableStateOf(false) }
     var message by remember(meta.id) { mutableStateOf<String?>(null) }
+    var selected by remember(meta.id) { mutableStateOf(emptySet<Int>()) }
     val type = meta.lumioType()
 
     LaunchedEffect(meta.id, reload) {
@@ -88,58 +95,114 @@ fun LumioRequestBar(meta: MetaDetails, modifier: Modifier = Modifier) {
 
     val m = media ?: return
     if (m.status == LumioStatus.AVAILABLE) return
-    val partial = m.status == LumioStatus.PARTIALLY_AVAILABLE
     val missingSeasons = m.seasons.filter { it.status == LumioStatus.UNKNOWN }.map { it.number }
     val canRequest = if (type == "tv") (missingSeasons.isNotEmpty() || (m.seasons.isEmpty() && m.status == LumioStatus.UNKNOWN)) else m.status == LumioStatus.UNKNOWN
 
-    Column(modifier = modifier.widthIn(max = 420.dp).fillMaxWidth().padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        when {
-            canRequest && active == null -> Button(
+    // Séries : on choisit la ou les saisons à demander (une seule saison manquante : déjà cochée)
+    val pickSeasons = type == "tv" && missingSeasons.size > 1
+    val chosen = when {
+        pickSeasons -> missingSeasons.filter { it in selected }
+        else -> missingSeasons
+    }
+
+    Column(modifier = modifier.widthIn(max = 420.dp).fillMaxWidth().padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (active != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val downloading = active.progress != null
+            Icon(
+                if (downloading) Icons.Default.HourglassTop else Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = if (downloading) Blue else Orange,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = when {
+                    downloading -> "Téléchargement : ${active.progress} %"
+                    active.status == 1 -> "Demande en attente de validation"
+                    else -> "Demandé : recherche en cours"
+                },
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        // Une série peut recevoir une autre saison pendant qu'une première est en cours ; un film, non
+        if (canRequest && (active == null || pickSeasons)) {
+            if (pickSeasons) {
+                Text(
+                    text = "Quelle saison veux-tu ?",
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    missingSeasons.forEach { n ->
+                        SeasonChip("Saison $n", n in selected) { selected = if (n in selected) selected - n else selected + n }
+                    }
+                    val all = chosen.size == missingSeasons.size
+                    SeasonChip("Toutes", all) { selected = if (all) emptySet() else missingSeasons.toSet() }
+                }
+            }
+            val nothing = pickSeasons && chosen.isEmpty()
+            Button(
                 onClick = {
-                    if (busy) return@Button
+                    if (busy || nothing) return@Button
                     busy = true
+                    val sent = chosen
                     scope.launch {
                         message = runCatching {
-                            LumioClient.request(type, meta.lumioTmdb(), meta.lumioImdb(), meta.name, meta.releaseInfo?.take(4), meta.poster, missingSeasons)
-                            if (type == "tv" && partial) "Saisons manquantes demandées ✓" else "Demande envoyée ✓"
+                            LumioClient.request(type, meta.lumioTmdb(), meta.lumioImdb(), meta.name, meta.releaseInfo?.take(4), meta.poster, sent)
+                            when {
+                                type != "tv" || sent.isEmpty() -> "Demande envoyée ✓"
+                                sent.size == 1 -> "Saison ${sent[0]} demandée ✓"
+                                else -> "${sent.size} saisons demandées ✓"
+                            }
                         }.getOrElse { it.message ?: "Erreur" }
+                        selected = emptySet()
                         busy = false
                         reload++
                     }
                 },
+                enabled = !nothing,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(40.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Blue, contentColor = Color.White),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Blue,
+                    contentColor = Color.White,
+                    disabledContainerColor = Blue.copy(alpha = 0.35f),
+                    disabledContentColor = Color.White.copy(alpha = 0.7f),
+                ),
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text(
                     text = when {
                         busy -> "  Envoi…"
-                        type == "tv" && partial -> "  Demander les saisons manquantes"
+                        nothing -> "  Choisis une saison"
+                        type == "tv" && chosen.size == 1 -> "  Demander la saison ${chosen[0]}"
+                        type == "tv" && chosen.size > 1 -> "  Demander ${chosen.size} saisons"
                         else -> "  Demander"
                     },
                     style = MaterialTheme.typography.titleSmall,
                 )
             }
-            active != null -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val downloading = active.progress != null
-                Icon(
-                    if (downloading) Icons.Default.HourglassTop else Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = if (downloading) Blue else Orange,
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(
-                    text = when {
-                        downloading -> "Téléchargement : ${active.progress} %"
-                        active.status == 1 -> "Demande en attente de validation"
-                        else -> "Demandé : recherche en cours"
-                    },
-                    color = MaterialTheme.colorScheme.onBackground,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
         }
         message?.let { Text(it, color = if (it.endsWith("✓")) Green else Orange, style = MaterialTheme.typography.bodySmall) }
+    }
+}
+
+@Composable
+private fun SeasonChip(label: String, on: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (on) Blue else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.12f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = label,
+            color = if (on) Color.White else MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.labelLarge,
+        )
     }
 }
