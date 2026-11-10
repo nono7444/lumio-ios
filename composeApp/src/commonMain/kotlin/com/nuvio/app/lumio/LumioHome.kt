@@ -170,6 +170,7 @@ fun LumioPlatformsSection(
 @Composable
 fun LumioHomeTopActions(modifier: Modifier = Modifier) {
     LumioResumeSyncEffect()
+    LumioFavoritesSyncEffect()
     val navigate = LocalLumioNavigate.current
     Row(
         modifier = modifier,

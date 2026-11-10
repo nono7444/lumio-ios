@@ -342,6 +342,7 @@ object LibraryRepository {
         persist(result.snapshot)
         publish()
         pushToServer(result.snapshot)
+        com.nuvio.app.lumio.LumioFavorites.onLocalChange(item, result.isSaved) // Lumio : favoris partagés avec la TV
         return TrackingMembershipApplyResult()
     }
 
@@ -354,12 +355,15 @@ object LibraryRepository {
         persist(snapshot)
         publish()
         pushToServer(snapshot)
+        com.nuvio.app.lumio.LumioFavorites.onLocalChange(item, true)
     }
 
     fun remove(id: String) {
         ensureLoaded()
+        val lumioItem = localState.findById(id)
         val result = localState.removeById(id)
         if (result.affectedCount > 0) {
+            lumioItem?.let { com.nuvio.app.lumio.LumioFavorites.onLocalChange(it, false) }
             log.i {
                 "Removing local library item id=$id profile=${result.snapshot.token.profileId} " +
                     "removed=${result.affectedCount}"
@@ -372,8 +376,10 @@ object LibraryRepository {
 
     private fun remove(id: String, type: String) {
         ensureLoaded()
+        val lumioItem = localState.findById(id)
         val result = localState.remove(id, type)
         if (result.affectedCount > 0) {
+            lumioItem?.takeIf { it.type == type }?.let { com.nuvio.app.lumio.LumioFavorites.onLocalChange(it, false) }
             log.i {
                 "Removing local library item id=$id type=$type profile=${result.snapshot.token.profileId}"
             }

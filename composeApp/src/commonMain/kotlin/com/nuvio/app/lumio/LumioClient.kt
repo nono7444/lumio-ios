@@ -22,8 +22,24 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+
+/** Un titre de la liste « À voir » du serveur Lumio (type « movie » ou « tv »). */
+data class LumioWatchItem(
+    val type: String,
+    val tmdbId: Int,
+    val title: String,
+    val year: String?,
+    val poster: String?,
+    val backdrop: String?,
+) {
+    val key: String get() = "$type:$tmdbId"
+}
+
+/** [removed] : titres retirés (clé → date en ms) ; null si le serveur est trop ancien pour le dire. */
+data class LumioWatchlistState(val items: List<LumioWatchItem>, val removed: Map<String, Long>?)
 
 /** Statuts du serveur Lumio (façon Seerr). */
 object LumioStatus {
@@ -223,6 +239,49 @@ object LumioClient {
             )
         }
     }
+
+    /** Liste « À voir » (les favoris, partagés avec Lumio TV). */
+    suspend fun watchlist(): LumioWatchlistState {
+        val o = call(HttpMethod.Get, "/api/watchlist")
+        fun JsonObject.str(k: String) = this[k]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+        val items = (o["items"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }.mapNotNull { t ->
+            val tmdbId = t["tmdbId"]?.jsonPrimitive?.intOrNull ?: return@mapNotNull null
+            LumioWatchItem(
+                type = if (t.str("type") == "tv") "tv" else "movie",
+                tmdbId = tmdbId,
+                title = t.str("title") ?: return@mapNotNull null,
+                year = t.str("year"),
+                poster = t.str("poster"),
+                backdrop = t.str("backdrop"),
+            )
+        }
+        val removed = (o["removed"] as? JsonArray)?.mapNotNull { it as? JsonObject }?.mapNotNull { t ->
+            val tmdbId = t["tmdbId"]?.jsonPrimitive?.intOrNull ?: return@mapNotNull null
+            val at = t["removedAt"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
+            "${if (t.str("type") == "tv") "tv" else "movie"}:$tmdbId" to at
+        }?.toMap()
+        return LumioWatchlistState(items, removed)
+    }
+
+    suspend fun watchlistAdd(item: LumioWatchItem) {
+        val body = buildJsonObject {
+            put("type", item.type)
+            put("tmdbId", item.tmdbId)
+            put("title", item.title)
+            item.year?.let { put("year", it) }
+            item.poster?.takeIf { it.startsWith("https://") }?.let { put("poster", it) }
+            item.backdrop?.takeIf { it.startsWith("https://") }?.let { put("backdrop", it) }
+        }
+        call(HttpMethod.Post, "/api/watchlist", body.toString())
+    }
+
+    suspend fun watchlistRemove(type: String, tmdbId: Int) {
+        call(HttpMethod.Delete, "/api/watchlist?type=$type&tmdbId=$tmdbId")
+    }
+
+    /** Identifiant TMDB d'un titre connu seulement par son identifiant IMDb. */
+    suspend fun tmdbIdFor(type: String, imdbId: String): Int? =
+        call(HttpMethod.Get, "/api/media?type=$type&imdbId=$imdbId")["tmdbId"]?.jsonPrimitive?.intOrNull
 
     /** Clé TMDB partagée par le serveur Lumio (jamais écrite dans l'appli). */
     suspend fun tmdbKey(): String? =
