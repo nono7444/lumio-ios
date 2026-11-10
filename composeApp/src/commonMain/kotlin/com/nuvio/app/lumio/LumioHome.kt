@@ -169,6 +169,7 @@ fun LumioPlatformsSection(
 /** Haut de l'accueil : loupe (recherche) et pastille du serveur. */
 @Composable
 fun LumioHomeTopActions(modifier: Modifier = Modifier) {
+    LumioResumeSyncEffect()
     val navigate = LocalLumioNavigate.current
     Row(
         modifier = modifier,

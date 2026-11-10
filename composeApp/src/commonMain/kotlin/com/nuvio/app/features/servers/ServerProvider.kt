@@ -56,6 +56,9 @@ interface ServerProvider {
 
     suspend fun resumeItems(session: ServerSession, limit: Int): List<ServerTitle> = unsupported()
 
+    /** Lumio : titres en cours avec leur position de lecture (tous appareils confondus). */
+    suspend fun resumeProgress(session: ServerSession, limit: Int): List<ServerResumeProgress> = emptyList()
+
     suspend fun setPlayed(session: ServerSession, itemId: String, played: Boolean): Unit = unsupported()
 
     suspend fun externalIdIndex(

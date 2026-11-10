@@ -9,6 +9,7 @@ import com.nuvio.app.features.servers.ServerCandidate
 import com.nuvio.app.features.servers.ServerItemRef
 import com.nuvio.app.features.servers.ServerMediaKind
 import com.nuvio.app.features.servers.ServerPlaybackTarget
+import com.nuvio.app.features.servers.ServerResumeProgress
 import com.nuvio.app.features.servers.ServerTitle
 import com.nuvio.app.features.servers.ServerUserState
 import com.nuvio.app.features.tracking.TrackingExternalIds
@@ -46,6 +47,12 @@ internal class MediaBrowserMapper(
         val preview = resumePreview(item) ?: return null
         val isEpisode = item.type.equals("Episode", ignoreCase = true)
         return ServerTitle(preview, if (isEpisode) TrackingExternalIds() else item.externalIds())
+    }
+
+    fun resumeProgress(item: BaseItem): ServerResumeProgress? {
+        val preview = resumePreview(item) ?: return null
+        val state = userState(item) ?: return null
+        return ServerResumeProgress(preview, state)
     }
 
     private fun resumePreview(item: BaseItem): MetaPreview? {

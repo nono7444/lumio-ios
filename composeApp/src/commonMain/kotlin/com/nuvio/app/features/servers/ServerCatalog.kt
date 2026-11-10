@@ -95,6 +95,8 @@ internal object ServerCatalog {
     }
 
     private fun resumeDefinitions(): List<HomeCatalogDefinition> {
+        // Lumio : une seule rangée « Continuer à regarder », celle de l'appli, alimentée par Jellyfin (LumioResume)
+        if (com.nuvio.app.lumio.LumioMode.ENABLED) return emptyList()
         val connections = ServerRepository.enabledConnections().filter { connection ->
             connection.selectedLibraries.isNotEmpty() &&
                 ServerRepository.provider(connection)?.supports(ServerCapability.USER_STATE_READ) == true

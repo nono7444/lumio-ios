@@ -117,6 +117,12 @@ data class ServerTitle(
     val externalIds: TrackingExternalIds = TrackingExternalIds(),
 )
 
+/** Lumio : un titre en cours sur le serveur, avec sa position (pour la rangée « Continuer à regarder »). */
+data class ServerResumeProgress(
+    val preview: MetaPreview,
+    val state: ServerUserState,
+)
+
 data class ServerItemDetails(
     val meta: MetaDetails,
     val externalIds: TrackingExternalIds,

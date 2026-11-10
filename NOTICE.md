@@ -27,3 +27,4 @@ Base : NuvioMedia/NuvioMobile, commit `de60c5a` (8 novembre 2026, version 0.6.10
 - Onglet « Demandes » : demandes en cours / terminées, avec la progression du téléchargement (`LumioTabs`, `LumioScreens`).
 - Onglet « Calendrier » : sorties numériques TMDB (films et nouvelles saisons) jour par jour, déjà sorties ou à venir (`LumioReleases`, `LumioScreens`).
 - Icône : celle de Nuvio, avec un « L » à la place du bouton lecture.
+- Accueil : une seule rangée « Continuer à regarder ». Celle du serveur est masquée et celle de l'appli suit Jellyfin (titres commencés sur la TV ou un autre appareil, mis à jour à l'ouverture de l'accueil puis toutes les minutes) (`LumioResume`, `ServerCatalog`, `MediaBrowserProvider`).

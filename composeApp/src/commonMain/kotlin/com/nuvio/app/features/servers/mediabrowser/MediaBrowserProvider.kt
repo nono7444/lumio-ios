@@ -17,6 +17,7 @@ import com.nuvio.app.features.servers.ServerPlaybackRequest
 import com.nuvio.app.features.servers.ServerPlaybackSession
 import com.nuvio.app.features.servers.ServerPlayerCapabilities
 import com.nuvio.app.features.servers.ServerProvider
+import com.nuvio.app.features.servers.ServerResumeProgress
 import com.nuvio.app.features.servers.ServerSession
 import com.nuvio.app.features.servers.ServerSignIn
 import com.nuvio.app.features.servers.ServerTitle
@@ -237,6 +238,22 @@ internal abstract class MediaBrowserProvider(
         }
         synchronized(lock) { aioStreamsServers[session.apiRoot] = detected }
         return detected
+    }
+
+    override suspend fun resumeProgress(session: ServerSession, limit: Int): List<ServerResumeProgress> {
+        val result = get(
+            session,
+            resumeEndpoint(session.userId),
+            ItemsResult.serializer(),
+            mapOf(
+                "limit" to limit.toString(),
+                "mediaTypes" to "Video",
+                "fields" to LIST_FIELDS,
+                "imageTypeLimit" to "1",
+                "enableImageTypes" to "Primary,Backdrop,Logo,Thumb",
+            ),
+        )
+        return result.items.mapNotNull(mapper(session)::resumeProgress)
     }
 
     override suspend fun resumeItems(session: ServerSession, limit: Int): List<ServerTitle> {
