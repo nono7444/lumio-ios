@@ -460,7 +460,7 @@ internal fun settingsSearchEntries(
         description = stringResource(Res.string.settings_appearance_poster_customization_description),
     )
 
-    addPage(
+    if (!com.nuvio.app.lumio.LumioMode.ENABLED) addPage(
         page = SettingsPage.Addons,
         key = "addons",
         title = addonsPage,

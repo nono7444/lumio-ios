@@ -51,8 +51,6 @@ object LumioStatus {
 }
 
 data class LumioSeason(val number: Int, val status: Int)
-/** « Regarder maintenant » : lien de lecture directe renvoyé par le serveur Lumio. */
-data class LumioWatchNow(val url: String, val quality: String?, val language: String?, val downloading: Boolean)
 data class LumioRequestInfo(val id: String, val status: Int, val progress: Int?)
 data class LumioMedia(val status: Int, val seasons: List<LumioSeason>, val requests: List<LumioRequestInfo>)
 
@@ -314,37 +312,6 @@ object LumioClient {
     }
 
     /** Envoie une demande (toutes les saisons manquantes pour une série). Renvoie le message du serveur. */
-    /** « Regarder maintenant » : le serveur sait-il lire tout de suite un titre absent (TorBox / AllDebrid) ? */
-    suspend fun watchNowEnabled(): Boolean = try {
-        call(HttpMethod.Get, "/api/watch/now")["enabled"]?.jsonPrimitive?.contentOrNull == "true"
-    } catch (e: CancellationException) {
-        throw e
-    } catch (_: Exception) {
-        false
-    }
-
-    /** Lien de lecture directe d'un titre absent du serveur ; le serveur lance aussi son téléchargement en arrière-plan. */
-    suspend fun watchNow(type: String, tmdbId: Int, season: Int?, episode: Int?, title: String, year: String?, poster: String?, backdrop: String?): LumioWatchNow {
-        val body = buildJsonObject {
-            put("type", type)
-            put("tmdbId", tmdbId)
-            put("title", title)
-            season?.let { put("season", it) }
-            episode?.let { put("episode", it) }
-            year?.let { put("year", it) }
-            poster?.takeIf { it.startsWith("https://") }?.let { put("poster", it) }
-            backdrop?.takeIf { it.startsWith("https://") }?.let { put("backdrop", it) }
-        }
-        val j = call(HttpMethod.Post, "/api/watch/now", body.toString())
-        fun str(k: String) = j[k]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-        return LumioWatchNow(
-            url = str("url") ?: throw LumioException("Aucun lien pour l'instant"),
-            quality = str("quality"),
-            language = str("language"),
-            downloading = (j["download"] as? JsonObject)?.get("state")?.jsonPrimitive?.contentOrNull == "started",
-        )
-    }
-
     suspend fun request(type: String, tmdbId: Int?, imdbId: String?, title: String, year: String?, poster: String?, seasons: List<Int>): Int {
         val body = buildJsonObject {
             put("type", type)

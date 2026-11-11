@@ -17,7 +17,7 @@ internal fun LazyListScope.settingsRootContent(
     category: SettingsCategory? = null,
 ) {
     val lumio = com.nuvio.app.lumio.LumioMode.ENABLED
-    SettingsCategory.entries.filter { category == null || it == category }.forEach { group ->
+    SettingsCategory.entries.filter { (category == null || it == category) && !(lumio && it == SettingsCategory.Services) }.forEach { group ->
         item(key = group.name) {
             SettingsGroup(isTablet = isTablet) {
                 when (group) {
@@ -87,15 +87,7 @@ internal fun LazyListScope.settingsRootContent(
                             onPageClick = onPageClick,
                         )
                     }
-                    // Lumio : seulement le Debrid (TorBox…) pour le streaming des titres absents du serveur
-                    SettingsCategory.Services -> if (lumio) {
-                        SettingsPageRow(
-                            page = SettingsPage.Debrid,
-                            description = Res.string.settings_integrations_debrid_description,
-                            isTablet = isTablet,
-                            onPageClick = onPageClick,
-                        )
-                    } else {
+                    SettingsCategory.Services -> if (!lumio) {
                         SettingsPageRow(
                             page = SettingsPage.Integrations,
                             description = Res.string.compose_settings_root_integrations_description,

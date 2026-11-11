@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.HourglassTop
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -94,12 +93,6 @@ fun LumioRequestBar(meta: MetaDetails, modifier: Modifier = Modifier) {
         }
     }
 
-    // « Lire » un titre absent (admin) : streaming par le serveur (TorBox), le fichier arrive en arrière-plan
-    val navigate = LocalLumioNavigate.current
-    var watchNow by remember { mutableStateOf(false) }
-    var watching by remember(meta.id) { mutableStateOf(false) }
-    LaunchedEffect(Unit) { watchNow = LumioClient.watchNowEnabled() }
-
     val m = media ?: return
     if (m.status == LumioStatus.AVAILABLE) return
     val missingSeasons = m.seasons.filter { it.status == LumioStatus.UNKNOWN }.map { it.number }
@@ -113,54 +106,6 @@ fun LumioRequestBar(meta: MetaDetails, modifier: Modifier = Modifier) {
     }
 
     Column(modifier = modifier.widthIn(max = 420.dp).fillMaxWidth().padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Série : premier épisode de la première saison absente (la suite arrive dans Jellyfin par le téléchargement)
-        val watchSeason = if (type == "tv") (missingSeasons.filter { it > 0 }.minOrNull() ?: 1) else null
-        if (watchNow && (type != "tv" || m.status != LumioStatus.AVAILABLE)) Button(
-            onClick = {
-                if (watching) return@Button
-                watching = true
-                scope.launch {
-                    message = runCatching {
-                        val tmdbId = meta.lumioTmdb() ?: meta.lumioImdb()?.let { LumioClient.tmdbIdFor(type, it) }
-                            ?: throw LumioException("Titre non reconnu par TMDB")
-                        val w = LumioClient.watchNow(type, tmdbId, watchSeason, if (type == "tv") 1 else null, meta.name, meta.releaseInfo?.take(4), meta.poster, meta.background)
-                        val launch = com.nuvio.app.features.player.PlayerLaunch(
-                            profileId = com.nuvio.app.features.profiles.ProfileRepository.activeProfileId,
-                            title = meta.name,
-                            sourceUrl = w.url,
-                            logo = meta.logo,
-                            poster = meta.poster,
-                            background = meta.background,
-                            seasonNumber = watchSeason,
-                            episodeNumber = if (type == "tv") 1 else null,
-                            streamTitle = listOfNotNull("Lumio", w.quality, w.language).joinToString(" · "),
-                            providerName = "Lumio",
-                            contentType = meta.type,
-                            videoId = if (type == "tv") "${meta.id}:$watchSeason:1" else meta.id,
-                            parentMetaId = meta.id,
-                            parentMetaType = meta.type,
-                        )
-                        navigate(com.nuvio.app.navigation.PlayerRoute(launchId = com.nuvio.app.features.player.PlayerLaunchStore.put(launch), title = meta.name))
-                        if (w.downloading) "Téléchargement lancé sur le serveur ✓" else null
-                    }.getOrElse { it.message ?: "Aucun lien pour l'instant" }
-                    watching = false
-                    reload++
-                }
-            },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            shape = RoundedCornerShape(40.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
-        ) {
-            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
-            Text(
-                text = when {
-                    watching -> "  Recherche d'un lien…"
-                    watchSeason != null -> "  Lire S${watchSeason}E1"
-                    else -> "  Lire"
-                },
-                style = MaterialTheme.typography.titleSmall,
-            )
-        }
         if (active != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val downloading = active.progress != null
             Icon(

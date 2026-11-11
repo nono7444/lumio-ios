@@ -55,8 +55,8 @@ internal fun LazyListScope.contentDiscoveryContent(
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
-                // Lumio : les addons servent aux sources de streaming (avec le Debrid) ; pas de plugins
-                SettingsNavigationRow(
+                // Lumio : pas de gestion d'addons ni de plugins, seulement ton serveur
+                if (!com.nuvio.app.lumio.LumioMode.ENABLED) SettingsNavigationRow(
                     title = stringResource(Res.string.compose_settings_page_addons),
                     description = stringResource(
                         if (AppFeaturePolicy.personalMediaAddonCopyEnabled) {
