@@ -231,7 +231,9 @@ internal enum class SettingsPage(
 internal val SettingsPage.opensInlineOnTablet: Boolean
     get() = parentPage != null
 
-internal fun SettingsPage.previousPage(): SettingsPage? = parentPage
+// Lumio : la page Debrid s'ouvre depuis la racine des paramètres (pas depuis « Intégrations », masquée)
+internal fun SettingsPage.previousPage(): SettingsPage? =
+    if (com.nuvio.app.lumio.LumioMode.ENABLED && this == SettingsPage.Debrid) SettingsPage.Integrations.parentPage else parentPage
 
 internal fun settingsCategoryForName(name: String): SettingsCategory = when (name) {
     "Account" -> SettingsCategory.You
